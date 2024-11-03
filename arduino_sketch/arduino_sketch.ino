@@ -1,105 +1,74 @@
 
-struct KnobValues {
-  int a;
-  int b;
-  int sw;
-};
-
 enum KnobDirection {
   CLOCKWISE,
   COUNTERCLOCKWISE,
-  UNKNOWN,
+  NO_DIRECTION
 };
+
+#define ENCODER_DO_NOT_USE_INTERRUPTS
+#include <Encoder.h>
 
 struct Knob {
-  int pin_a;
-  int pin_b;
-  int pin_switch;
-  struct KnobValues last;
-  struct KnobValues current;
-  enum KnobDirection direction;
-  bool direction_changed;
+  Encoder encoder;
+  int pinSwitch;
+  long oldPosition;
+  int position;
+  KnobDirection direction;
+  KnobDirection lastDirection;
+  unsigned long lastDirectionChangeTime;
+
+  Knob(uint8_t pinA, uint8_t pinB, int pinSwitch) 
+    : encoder(pinA, pinB), pinSwitch(pinSwitch), oldPosition(-999), position(0), lastDirection(NO_DIRECTION), direction(NO_DIRECTION) {}
 };
 
-struct Knob knobs[1];
-
-void read_inputs(struct Knob *knob, struct KnobValues *knob_values) {
-  knob_values->a = digitalRead(knob->pin_a);
-  knob_values->b = digitalRead(knob->pin_b);
-  knob_values->sw = digitalRead(knob->pin_switch);
+KnobDirection getKnobDirection(struct Knob *knob) {
+  if (knob->position > knob->oldPosition) {
+    return CLOCKWISE;
+  } else if (knob->position < knob->oldPosition) {
+    return COUNTERCLOCKWISE;
+  }
+  return NO_DIRECTION;
 }
 
-void setup_knob(struct Knob *knob) {
-  pinMode(knob->pin_a, INPUT_PULLUP);
-  pinMode(knob->pin_b, INPUT_PULLUP);
-  pinMode(knob->pin_switch, INPUT_PULLUP);
+void updateKnob(struct Knob *knob) {
+  knob->position = knob->encoder.read();
 
-  read_inputs(knob, &knob->last);
-  read_inputs(knob, &knob->current);
-  knob->direction = UNKNOWN;
-  knob->direction_changed = false;
+  knob->direction = getKnobDirection(knob);
 
-  Serial.print("Setup complete\n");
-}
-
-void update_knob(struct Knob *knob) {
-  knob->last = knob->current;
-  read_inputs(knob, &knob->current);
-
-  bool a_high_to_low = knob->last.a == HIGH && knob->current.a == LOW;
-
-  if (a_high_to_low) {
-    if (knob->current.b == LOW) {
-      knob->direction = COUNTERCLOCKWISE;
-    } else {
-      knob->direction = CLOCKWISE;
+  // If the direction changed too fast, ignore the change
+  if (knob->direction != knob->lastDirection) {
+    unsigned long currentTime = millis();
+    if (currentTime - knob->lastDirectionChangeTime < 70) {
+      knob->direction = NO_DIRECTION;
     }
-  } else {
-    knob->direction = UNKNOWN;
-  }
-}
-
-void print_pin_status(struct Knob *knob) {
-  Serial.print(knob->last.a);
-  Serial.print(knob->last.b);
-  Serial.print(knob->last.sw);
-  Serial.print(" ");
-  Serial.print(knob->current.a);
-  Serial.print(knob->current.b);
-  Serial.print(knob->current.sw);
-  Serial.print("\n");
-}
-
-void print_knob_events(struct Knob *knob) {
-  switch (knob->direction) {
-    case CLOCKWISE:
-      print_pin_status(knob);
-      Serial.print("CLOCKWISE\n");
-      break;
-    case COUNTERCLOCKWISE:
-      print_pin_status(knob);
-      Serial.print("COUNTERCLOCKWISE\n");
-      break;
-    case UNKNOWN:
-      break;
   }
 
-  knob->direction_changed = false;
+  if (knob->direction != NO_DIRECTION) {
+    knob->lastDirection = knob->direction;
+    knob->lastDirectionChangeTime = millis();
+  }
+
+  knob->oldPosition = knob->position;
 }
+
+
+constexpr int knobsLen = 1;
+Knob knobs[knobsLen] = {
+  Knob(11, 9, 18)
+};
 
 void setup() {
   Serial.begin(115200);
-
-  knobs[0].pin_a = 9;
-  knobs[0].pin_b = 11;
-  knobs[0].pin_switch = 18;
-
-  setup_knob(&knobs[0]);
 }
 
 void loop() {
+  for (int i = 0; i < knobsLen; i++) {
+    Knob *knob = &knobs[i];
+    updateKnob(knob);
 
-  Knob *knob = &knobs[0];
-  update_knob(knob);
-  print_knob_events(knob);
+    if (knob->direction != NO_DIRECTION && knob->position % 4 == 0) {
+      Serial.print("Direction: ");
+      Serial.println(knob->direction == CLOCKWISE ? "CLOCKWISE" : "COUNTERCLOCKWISE");
+    }
+  }
 }
