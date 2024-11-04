@@ -1,4 +1,11 @@
 
+
+#define ENCODER_DO_NOT_USE_INTERRUPTS
+#include <Encoder.h>
+
+// from https://github.com/MHeironimus/ArduinoJoystickLibrary
+#include <Joystick.h>
+
 enum KnobDirection {
   CLOCKWISE,
   COUNTERCLOCKWISE,
@@ -11,8 +18,7 @@ enum KnobButtonEvent {
   NO_BUTTON_EVENT
 };
 
-#define ENCODER_DO_NOT_USE_INTERRUPTS
-#include <Encoder.h>
+Joystick_ Joystick;
 
 struct Knob {
   Encoder encoder;
@@ -111,6 +117,8 @@ Knob knobs[knobsLen] = {
 
 void setup() {
   Serial.begin(115200);
+  Joystick.begin();
+
   for (int i = 0; i < knobsLen; i++) {
     setupKnob(&knobs[i]);
   }
@@ -121,15 +129,23 @@ void loop() {
     Knob *knob = &knobs[i];
     updateKnob(knob);
 
-    if (getKnobStepDirection(knob) != NO_DIRECTION) {
-      Serial.print("Direction: ");
-      Serial.println(knob->direction == CLOCKWISE ? "CLOCKWISE" : "COUNTERCLOCKWISE");
+    KnobDirection stepDirection = getKnobStepDirection(knob);
+    if (stepDirection == CLOCKWISE) {
+      Joystick.setButton(1, true);
+      Serial.println("clockwise");
+    } else if (stepDirection == COUNTERCLOCKWISE) {
+      Joystick.setButton(2, true);
+      Serial.println("counterclockwise");
     }
 
+
     KnobButtonEvent buttonEvent = getKnobButtonEvent(knob);
-    if (buttonEvent != NO_BUTTON_EVENT) {
-      Serial.print("Button event: ");
-      Serial.println(buttonEvent == BUTTON_PRESSED ? "PRESSED" : "RELEASED");
+    if (buttonEvent == BUTTON_PRESSED) {
+      Joystick.setButton(0, true);
+      Serial.println("Button pressed");
+    } else if (buttonEvent == BUTTON_RELEASED) {
+      Joystick.setButton(0, false);
+      Serial.println("Button released");
     }
   }
 }

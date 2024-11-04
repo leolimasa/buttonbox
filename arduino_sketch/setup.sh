@@ -10,3 +10,8 @@ arduino-cli core install $platform
 
 # https://github.com/PaulStoffregen/Encoder
 arduino-cli lib install "Encoder"
+curl -L -o /tmp/arduino_joystick.zip https://github.com/MHeironimus/ArduinoJoystickLibrary/archive/master.zip
+export ARDUINO_LIBRARY_ENABLE_UNSAFE_INSTALL=true
+arduino-cli lib install --zip-path /tmp/arduino_joystick.zip
+
+
