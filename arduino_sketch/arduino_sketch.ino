@@ -1,5 +1,6 @@
 
-
+#define JOYSTICK_BUTTON_HOLD_MS 10
+// #define DEBUG true
 #define ENCODER_DO_NOT_USE_INTERRUPTS
 #include <Encoder.h>
 
@@ -32,15 +33,24 @@ struct Knob {
   bool lastButtonState;
   bool buttonChanged;
   unsigned long lastButtonChangeTime;
+  int jstkCcwBtn;
+  int jstkCwBtn;
+  int jstkSwBtn;
+  unsigned long lastCwJstkBtnTime;
+  unsigned long lastCcwJstkBtnTime;
 
-  Knob(uint8_t pinA, uint8_t pinB, int pinSwitch) 
+  Knob(uint8_t pinA, uint8_t pinB, int pinSwitch, int jstkCcwBtn, int jstkCwBtn, int jstkSwBtn) 
     : encoder(pinA, pinB)
     , pinSwitch(pinSwitch)
     , oldPosition(-999)
     , position(0)
     , lastDirection(NO_DIRECTION)
     , direction(NO_DIRECTION)
-    , isButtonPressed(false) {}
+    , isButtonPressed(false)
+    , jstkCcwBtn(jstkCcwBtn)
+    , jstkCwBtn(jstkCwBtn)
+    , jstkSwBtn(jstkSwBtn)
+    {}
 };
 
 KnobDirection getKnobDirection(struct Knob *knob) {
@@ -109,14 +119,68 @@ void updateKnob(struct Knob *knob) {
   knob->oldPosition = knob->position;
 }
 
+void updateJoystickButtons(struct Knob *knob) {
+  unsigned long currentTime = millis();
+  KnobDirection direction = getKnobStepDirection(knob);
+
+  // clockwise press
+  if (direction == CLOCKWISE) {
+    Joystick.setButton(knob->jstkCwBtn, true);
+    Joystick.setButton(knob->jstkCcwBtn, false);
+    knob->lastCwJstkBtnTime = currentTime;
+    #ifdef DEBUG
+    Serial.println("clockwise");
+    #endif
+  }
+
+  // clockwise release
+  if (currentTime - knob->lastCwJstkBtnTime > JOYSTICK_BUTTON_HOLD_MS) {
+    Joystick.setButton(knob->jstkCwBtn, false);
+  }
+
+  // counterclockwise press
+  if (direction == COUNTERCLOCKWISE) {
+    Joystick.setButton(knob->jstkCcwBtn, true);
+    Joystick.setButton(knob->jstkCwBtn, false);
+    knob->lastCcwJstkBtnTime = currentTime;
+    #ifdef DEBUG
+    Serial.println("counterclockwise");
+    #endif
+  }
+
+  // counterclockwise release
+  if (currentTime - knob->lastCcwJstkBtnTime > JOYSTICK_BUTTON_HOLD_MS) {
+    Joystick.setButton(knob->jstkCcwBtn, false);
+  }
+
+  // button press
+  if (getKnobButtonEvent(knob) == BUTTON_PRESSED) {
+    Joystick.setButton(knob->jstkSwBtn, true);
+    #ifdef DEBUG
+    Serial.println("button pressed");
+    #endif
+  } 
+
+  // button release
+  if (getKnobButtonEvent(knob) == BUTTON_RELEASED) {
+    Joystick.setButton(knob->jstkSwBtn, false);
+    #ifdef DEBUG
+    Serial.println("button released");
+    #endif
+  }
+}
+
 
 constexpr int knobsLen = 1;
 Knob knobs[knobsLen] = {
-  Knob(11, 9, 18)
+  Knob(11, 9, 18, 0, 1, 2)
 };
 
 void setup() {
+  #ifdef DEBUG
   Serial.begin(115200);
+  #endif
+
   Joystick.begin();
 
   for (int i = 0; i < knobsLen; i++) {
@@ -128,24 +192,6 @@ void loop() {
   for (int i = 0; i < knobsLen; i++) {
     Knob *knob = &knobs[i];
     updateKnob(knob);
-
-    KnobDirection stepDirection = getKnobStepDirection(knob);
-    if (stepDirection == CLOCKWISE) {
-      Joystick.setButton(1, true);
-      Serial.println("clockwise");
-    } else if (stepDirection == COUNTERCLOCKWISE) {
-      Joystick.setButton(2, true);
-      Serial.println("counterclockwise");
-    }
-
-
-    KnobButtonEvent buttonEvent = getKnobButtonEvent(knob);
-    if (buttonEvent == BUTTON_PRESSED) {
-      Joystick.setButton(0, true);
-      Serial.println("Button pressed");
-    } else if (buttonEvent == BUTTON_RELEASED) {
-      Joystick.setButton(0, false);
-      Serial.println("Button released");
-    }
+    updateJoystickButtons(knob);
   }
 }
