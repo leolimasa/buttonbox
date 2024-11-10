@@ -1,5 +1,5 @@
 {
-  description = "The Nova programming language";
+  description = "Knobbox";
 
   # Declare inputs to fetch from
   inputs = {
@@ -25,6 +25,14 @@
             buildInputs = [
               arduino-ide
               arduino-cli
+              rustup
+              cargo
+              rust-analyzer
+              pkg-config
+              libudev-zero
+              python3
+              python312Packages.protobuf
+              python312Packages.grpcio-tools
             ]; 
 
             shellHook = ''

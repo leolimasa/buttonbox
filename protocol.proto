@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+enum Direction {
+  CLOCKWISE = 0;
+  COUNTERCLOCKWISE = 1;
+}
+
+message RotaryChange {
+  optional int32 index = 1;
+  optional Direction direction = 2;
+} 
+
+message ButtonChange {
+  optional int32 index = 1;
+  optional bool pressed = 2;
+}

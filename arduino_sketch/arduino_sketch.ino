@@ -1,5 +1,6 @@
 
-#define JOYSTICK_BUTTON_HOLD_MS 10
+#define DEBUG
+#define JOYSTICK_BUTTON_HOLD_MS 50
 // #define DEBUG true
 #define ENCODER_DO_NOT_USE_INTERRUPTS
 #include <Encoder.h>
@@ -38,6 +39,8 @@ struct Knob {
   int jstkSwBtn;
   unsigned long lastCwJstkBtnTime;
   unsigned long lastCcwJstkBtnTime;
+  bool jstkCcwPressed;
+  bool jstkCwPressed;
 
   Knob(uint8_t pinA, uint8_t pinB, int pinSwitch, int jstkCcwBtn, int jstkCwBtn, int jstkSwBtn) 
     : encoder(pinA, pinB)
@@ -50,6 +53,8 @@ struct Knob {
     , jstkCcwBtn(jstkCcwBtn)
     , jstkCwBtn(jstkCwBtn)
     , jstkSwBtn(jstkSwBtn)
+    , jstkCcwPressed(false)
+    , jstkCwPressed(false)
     {}
 };
 
@@ -125,32 +130,58 @@ void updateJoystickButtons(struct Knob *knob) {
 
   // clockwise press
   if (direction == CLOCKWISE) {
-    Joystick.setButton(knob->jstkCwBtn, true);
-    Joystick.setButton(knob->jstkCcwBtn, false);
     knob->lastCwJstkBtnTime = currentTime;
     #ifdef DEBUG
-    Serial.println("clockwise");
+    Serial.print("clockwise ");
+    #endif
+    if (!knob->jstkCwPressed) {
+      knob->jstkCwPressed = true;
+      Joystick.setButton(knob->jstkCwBtn, true);
+      #ifdef DEBUG
+      Serial.print("press");
+      #endif
+    }
+
+    #ifdef DEBUG
+    Serial.println();
     #endif
   }
 
   // clockwise release
-  if (currentTime - knob->lastCwJstkBtnTime > JOYSTICK_BUTTON_HOLD_MS) {
+  if (currentTime - knob->lastCwJstkBtnTime > JOYSTICK_BUTTON_HOLD_MS && direction != CLOCKWISE && knob->jstkCwPressed) {
     Joystick.setButton(knob->jstkCwBtn, false);
+    knob->jstkCwPressed = false;
+    #ifdef DEBUG
+    Serial.println("clockwise release");
+    #endif
   }
 
   // counterclockwise press
   if (direction == COUNTERCLOCKWISE) {
-    Joystick.setButton(knob->jstkCcwBtn, true);
-    Joystick.setButton(knob->jstkCwBtn, false);
     knob->lastCcwJstkBtnTime = currentTime;
     #ifdef DEBUG
-    Serial.println("counterclockwise");
+    Serial.print("counter-clockwise ");
+    #endif
+    if (!knob->jstkCcwPressed) {
+      knob->jstkCcwPressed = true;
+      Joystick.setButton(knob->jstkCcwBtn, true);
+      #ifdef DEBUG
+      Serial.print("press");
+      #endif
+    }
+
+    #ifdef DEBUG
+    Serial.println();
     #endif
   }
 
   // counterclockwise release
-  if (currentTime - knob->lastCcwJstkBtnTime > JOYSTICK_BUTTON_HOLD_MS) {
+  if (currentTime - knob->lastCcwJstkBtnTime > JOYSTICK_BUTTON_HOLD_MS && direction != COUNTERCLOCKWISE && knob->jstkCcwPressed) {
     Joystick.setButton(knob->jstkCcwBtn, false);
+    knob->jstkCcwPressed = false;
+    #ifdef DEBUG
+    Serial.println("counter-clockwise release");
+    #endif
   }
 
   // button press

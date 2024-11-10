@@ -1,0 +1,3 @@
+[submodule "arduino_sketch/nanopb"]
+	path = arduino_sketch/nanopb
+	url = git@github.com:nanopb/nanopb.git
