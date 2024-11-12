@@ -1,5 +1,11 @@
 use std::time::Duration;
 
+use prost::Message;
+
+pub mod protocol {
+    include!(concat!(env!("OUT_DIR"), "/protocol.rs"));
+}
+
 use serialport;
 
 pub fn detect() -> Result<Vec<String>, Box<dyn std::error::Error>> {
@@ -12,6 +18,8 @@ pub fn detect() -> Result<Vec<String>, Box<dyn std::error::Error>> {
 pub enum SerialError {
     Connect(serialport::Error),
     ByteRead(std::io::Error),
+    MessageRead(std::io::Error),
+    Decode(prost::DecodeError),
 }
 
 pub fn connect(port_name: &str) -> Result<Box<dyn serialport::SerialPort>, SerialError> {
@@ -26,3 +34,10 @@ pub fn read_byte(port: &mut Box<dyn serialport::SerialPort>) -> Result<u8, Seria
     port.read_exact(&mut buf).or_else(|e| { Err(SerialError::ByteRead(e)) })?;
     Ok(buf[0])
 }
+
+pub fn read_message(port: &mut Box<dyn serialport::SerialPort>, msg_len: u8) -> Result<protocol::Message, SerialError> {
+    let mut buf: Vec<u8> = vec![0; msg_len as usize];
+    port.read_exact(&mut buf).or_else(|e| { Err(SerialError::MessageRead(e)) })?;
+    Ok(protocol::Message::decode(&*buf).or_else(|e| { Err(SerialError::Decode(e)) })?)
+}
+

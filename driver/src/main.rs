@@ -18,7 +18,7 @@ fn main() {
         };
 
         // Print byte in hex
-        println!("{:02X}", byte);
+        // println!("{:02X}", byte);
 
         // Add the byte to the last_4_bytes queue.
         last_4_bytes.push_back(byte);
@@ -32,7 +32,6 @@ fn main() {
             && last_4_bytes[1] == 0x01 
             && last_4_bytes[2] == 0x6f 
             && last_4_bytes[3] == 0x31 {
-            println!("Found magic sequence");
 
             // Read the next byte to get the message length.
             let message_length = match serial::read_byte(&mut port) {
@@ -45,8 +44,17 @@ fn main() {
                 }
             };
            
-            println!("Message length: {}", message_length);
-            
+            // Read the message
+            let message = match serial::read_message(&mut port, message_length) {
+                Ok(message) => message,
+                Err(e) => {
+                    // clear last last_4_bytes and continue
+                    println!("Error reading message: {:?}", e);
+                    last_4_bytes.clear();
+                    continue;
+                }
+            };
+            println!("{:?}", message);
         }
 
 

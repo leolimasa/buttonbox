@@ -1,3 +1,5 @@
+package protocol;
+
 enum Direction {
   CLOCKWISE = 0;
   COUNTERCLOCKWISE = 1;

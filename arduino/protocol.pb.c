@@ -6,13 +6,13 @@
 #error Regenerate this file with the current version of nanopb generator.
 #endif
 
-PB_BIND(Message, Message, AUTO)
+PB_BIND(protocol_Message, protocol_Message, AUTO)
 
 
-PB_BIND(RotaryChange, RotaryChange, AUTO)
+PB_BIND(protocol_RotaryChange, protocol_RotaryChange, AUTO)
 
 
-PB_BIND(ButtonChange, ButtonChange, AUTO)
+PB_BIND(protocol_ButtonChange, protocol_ButtonChange, AUTO)
 
 
 

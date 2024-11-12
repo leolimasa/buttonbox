@@ -127,7 +127,7 @@ void sendSerialMessage(uint8_t *message, uint8_t len) {
   }
 }
 
-void sendMessage(Message *message) {
+void sendMessage(protocol_Message *message) {
   uint8_t buffer[256];
   size_t messageLength;
   bool status;
@@ -136,7 +136,7 @@ void sendMessage(Message *message) {
   pb_ostream_t stream = pb_ostream_from_buffer(buffer, sizeof(buffer));
 
   // Encode message
-  status = pb_encode(&stream, Message_fields, message);
+  status = pb_encode(&stream, protocol_Message_fields, message);
   messageLength = stream.bytes_written;
 
   if (!status) {
@@ -149,29 +149,29 @@ void sendMessage(Message *message) {
   sendSerialMessage(buffer, messageLength);
 }
 
-void sendRotaryChange(int32_t index, Direction direction) {
-  RotaryChange rotaryChange = RotaryChange_init_default;
+void sendRotaryChange(int32_t index, protocol_Direction direction) {
+  protocol_RotaryChange rotaryChange = protocol_RotaryChange_init_default;
   rotaryChange.has_index = true;
   rotaryChange.index = index;
   rotaryChange.has_direction = true;
   rotaryChange.direction = direction;
 
-  Message message = Message_init_default;
-  message.which_payload = Message_rotary_change_tag;
+  protocol_Message message = protocol_Message_init_default;
+  message.which_payload = protocol_Message_rotary_change_tag;
   message.payload.rotary_change = rotaryChange;
 
   sendMessage(&message);
 }
 
 void sendButtonChange(int32_t index, bool pressed) {
-  ButtonChange buttonChange = ButtonChange_init_default;
+  protocol_ButtonChange buttonChange = protocol_ButtonChange_init_default;
   buttonChange.has_index = true;
   buttonChange.index = index;
   buttonChange.has_pressed = true;
   buttonChange.pressed = pressed;
 
-  Message message = Message_init_default;
-  message.which_payload = Message_button_change_tag;
+  protocol_Message message = protocol_Message_init_default;
+  message.which_payload = protocol_Message_button_change_tag;
   message.payload.button_change = buttonChange;
 
   sendMessage(&message);
@@ -182,12 +182,12 @@ void sendMessages(int index, struct Knob *knob) {
 
   // clockwise press
   if (direction == CLOCKWISE) {
-    sendRotaryChange(index, Direction_CLOCKWISE);
+    sendRotaryChange(index, protocol_Direction_CLOCKWISE);
   }
 
   // counterclockwise press
   if (direction == COUNTERCLOCKWISE) {
-    sendRotaryChange(index, Direction_COUNTERCLOCKWISE);
+    sendRotaryChange(index, protocol_Direction_COUNTERCLOCKWISE);
   }
 
   // button press
