@@ -1,0 +1,11 @@
+[package]
+name = "knobbox_driver"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+prost = "0.13.3"
+serialport = "4.6.0"
+
+[build-dependencies]
+prost-build = "0.13.3"

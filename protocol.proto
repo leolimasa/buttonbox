@@ -1,8 +1,13 @@
-syntax = "proto3";
-
 enum Direction {
   CLOCKWISE = 0;
   COUNTERCLOCKWISE = 1;
+}
+
+message Message {
+  oneof payload {
+    RotaryChange rotary_change = 1;
+    ButtonChange button_change = 2;
+  }
 }
 
 message RotaryChange {

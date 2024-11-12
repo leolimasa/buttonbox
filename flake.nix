@@ -33,6 +33,7 @@
               python3
               python312Packages.protobuf
               python312Packages.grpcio-tools
+              protobuf
             ]; 
 
             shellHook = ''
